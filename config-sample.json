@@ -1,0 +1,5 @@
+{
+    "network": "data/cm.csv",
+    "realizations": 100,
+    "alpha": 1.0
+}

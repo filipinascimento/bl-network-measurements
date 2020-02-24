@@ -1,0 +1,23 @@
+{
+  "name" : "network/edgeslist",
+  "desc" : "Network in edgeslist format",
+  "files" : [ 
+      {
+          "id" : "fe",
+          "filename" : "output_fe.mat",
+          "desc" : "FE structure",
+          "ext" : ".mat",
+          "required" : true
+      }, 
+      {
+          "id" : "life_results",
+          "filename" : "life_results.json",
+          "required" : true
+      }, 
+      {
+          "id" : "tracts",
+          "dirname" : "tracts",
+          "required" : true
+      }
+  ]
+}
