@@ -1,8 +1,12 @@
-name: cxnetworks
+name: base
 channels:
+  - conda-forge
+  - anaconda
   - defaults
 dependencies:
   - python=3.7
-  - pip
+  - igraph>=0.7.1
+  - louvain
   - numpy
   - tqdm
+
