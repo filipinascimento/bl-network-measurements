@@ -63,10 +63,10 @@ def calcOutStrength(g):
 	return results, np.average(results)
 
 def calcClusteringCoefficient(g):
-	if("weight" in g.edge_attributes()):
-		results = g.transitivity_local_undirected(mode="nan", weights=None)
-	else:
-		results = g.transitivity_local_undirected(mode="nan", weights="weight")
+	# if("weight" in g.edge_attributes()):
+	results = g.transitivity_local_undirected(weights=None)
+	# else:
+	# 	results = g.transitivity_local_undirected(weights="weight")
 	return np.nan_to_num(results,0), np.nanmean(results)
 
 def calcCoreness(g):
