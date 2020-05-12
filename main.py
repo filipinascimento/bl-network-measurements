@@ -327,7 +327,7 @@ for entry in indexData:
 	nullmodelNetworkMeasurements = {};
 
 	for filename,aggregateName,isNullModel in tqdm(filenames):
-		adjacencyMatrix = loadCSVMatrix(PJ(CSVDirectory, filename))
+		adjacencyMatrix = np.abs(loadCSVMatrix(PJ(CSVDirectory, filename))) #taking the ABS temporarily
 		directionMode=ig.ADJ_DIRECTED
 		weights = adjacencyMatrix
 		if(check_symmetric(adjacencyMatrix)):
@@ -431,16 +431,18 @@ for entry in indexData:
 						plt.close(fig)
 				fd.write("\n")
 	
-	for aggregatorName in finalNodeMeasurements:
-		for measurement,values in finalNodeMeasurements[aggregatorName].items():
-			if(aggregatorName in nullmodelNodeMeasurements
-				and measurement in nullmodelNodeMeasurements[aggregatorName]):
-				nullValues = list(np.array(nullmodelNodeMeasurements[aggregatorName][measurement]).flatten())
-				_,bins = np.histogram(list(values)+nullValues,bins=30)
-				if(shallPlot):
+	if(shallPlot):
+		for aggregatorName in finalNodeMeasurements:
+			for measurement,values in finalNodeMeasurements[aggregatorName].items():
+					nullValues = [];
+					if(aggregatorName in nullmodelNodeMeasurements
+						and measurement in nullmodelNodeMeasurements[aggregatorName]):
+						nullValues = list(np.array(nullmodelNodeMeasurements[aggregatorName][measurement]).flatten())
+					_,bins = np.histogram(list(values)+nullValues,bins=30)
 					fig = plt.figure(figsize= (8,5))
 					ax = plt.axes()
-					ax.hist(nullValues,bins=bins,density=True,color="#888888")
+					if(nullValues):
+						ax.hist(nullValues,bins=bins,density=True,color="#888888")
 					ax.hist(values,bins=bins,density=True,color="#cc1111",alpha=0.75)
 					ax.set_xlabel(measurement);
 					ax.set_ylabel("Density");
