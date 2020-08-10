@@ -92,7 +92,8 @@ A sample dataset is provided in folder `data` and `config-sample.json`
 
 ## Output
 
-The output is a `conmat` enriched with the measurements. Network measurements and null model statistics can be accessed directly from the files ending with `_measurements.txt` in the output `csv` directory. Node measurements are named as `<Name of Network>_prop_<Name of Property>.txt`. If `generatePlots` option is enabled, the distributions of statistics are plotted together with null model if present in a new directory `figures`.
+The output is a `network` enriched with the measurements. You can use Network Visualization and Network Report to generate visualizations, plots and tables of the results.
+<!-- Network measurements and null model statistics can be accessed directly from the files ending with `_measurements.txt` in the output `csv` directory. Node measurements are named as `<Name of Network>_prop_<Name of Property>.txt`. If `generatePlots` option is enabled, the distributions of statistics are plotted together with null model if present in a new directory `figures`. -->
 
 <!-- #### Product.json
 

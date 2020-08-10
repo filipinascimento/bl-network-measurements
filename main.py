@@ -8,6 +8,7 @@ import json
 import numpy as np
 from tqdm import tqdm
 import igraph as ig
+import jgf
 
 import matplotlib as mpl
 mpl.use('Agg')
@@ -107,7 +108,7 @@ def calcBetweennessCentralization(G):
 	max_temparr = max(temparr)
 	return None,sum(max_temparr-i for i in temparr)/(vnum-1)
 
-def calcRichClubCoefficient(graph, highest=True, scores=None, indices_only=False):
+def calcRichClubCoefficient(g, highest=True, scores=None, indices_only=False):
 	Trc = richClubPercentage
 	degree = np.array(g.degree())
 	edges = np.array(g.get_edgelist())
@@ -121,14 +122,14 @@ def calcRichClubCoefficient(graph, highest=True, scores=None, indices_only=False
 		RC = 0
 	return None,RC
 
-def calcDegreeAssortativity(graph):
-	return None,g.assortativity_degree(directed=graph.is_directed())
+def calcDegreeAssortativity(g):
+	return None,g.assortativity_degree(directed=g.is_directed())
 
-def calcDiameter(graph):
+def calcDiameter(g):
 	if("weight" in g.edge_attributes()):
-		return None,g.diameter(directed=graph.is_directed(),weights="weight")
+		return None,g.diameter(directed=g.is_directed(),weights="weight")
 	else:
-		return None,g.diameter(directed=graph.is_directed())
+		return None,g.diameter(directed=g.is_directed())
 
 def reindexList(names,returnDict=False):
 	d = {ni: indi for indi, ni in enumerate(set(names))}
@@ -221,10 +222,6 @@ measurements = {
 }
 
 
-
-def check_symmetric(a, rtol=1e-05, atol=1e-08):
-	return np.allclose(a, a.T, rtol=rtol, atol=atol)
-
 def isFloat(value):
 	if(value is None):
 		return False
@@ -234,8 +231,63 @@ def isFloat(value):
 	except ValueError:
 		return False
 
-def loadCSVMatrix(filename):
-	return np.loadtxt(filename,delimiter=",")
+
+class NumpyEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
+			np.int16, np.int32, np.int64, np.uint8,
+			np.uint16, np.uint32, np.uint64)):
+			ret = int(obj)
+		elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+			ret = float(obj)
+		elif isinstance(obj, (np.ndarray,)): 
+			ret = obj.tolist()
+		else:
+			ret = json.JSONEncoder.default(self, obj)
+
+		if isinstance(ret, (float)):
+			if math.isnan(ret):
+				ret = None
+
+		if isinstance(ret, (bytes, bytearray)):
+			ret = ret.decode("utf-8")
+
+		return ret
+
+results = {"errors": [], "warnings": [], "brainlife": [], "datatype_tags": [], "tags": []}
+
+def warning(msg):
+	global results
+	results['warnings'].append(msg) 
+	#results['brainlife'].append({"type": "warning", "msg": msg}) 
+	print(msg)
+
+def error(msg):
+	global results
+	results['errors'].append(msg) 
+	#results['brainlife'].append({"type": "error", "msg": msg}) 
+	print(msg)
+
+def exitApp():
+	global results
+	with open("product.json", "w") as fp:
+		json.dump(results, fp, cls=NumpyEncoder)
+	if len(results["errors"]) > 0:
+		sys.exit(1)
+	else:
+		sys.exit()
+
+def exitAppWithError(msg):
+	global results
+	results['errors'].append(msg) 
+	#results['brainlife'].append({"type": "error", "msg": msg}) 
+	print(msg)
+	exitApp()
+
+
+
+
+
 
 
 configFilename = "config.json"
@@ -244,216 +296,51 @@ if(argCount > 1):
 		configFilename = sys.argv[1]
 
 outputDirectory = "output"
-csvOutputDirectory = PJ(outputDirectory, "csv")
-figuresOutputDirectory = PJ(outputDirectory, "figures")
+outputFile = PJ(outputDirectory,"network.json.gz")
 
 if(not os.path.exists(outputDirectory)):
 		os.makedirs(outputDirectory)
 
-if(not os.path.exists(csvOutputDirectory)):
-		os.makedirs(csvOutputDirectory)
-
-if(not os.path.exists(figuresOutputDirectory)):
-		os.makedirs(figuresOutputDirectory)
-
 with open(configFilename, "r") as fd:
 		config = json.load(fd)
 
-# "index": "data/index.json",
-# "label": "data/label.json",
-# "csv": "data/csv",
+
 # "transform":"absolute", //"absolute" or "signed"
 # "retain-weights":false,
 # "threshold": "none"
-
-indexFilename = config["index"]
-labelFilename = config["label"]
-CSVDirectory = config["csv"]
 
 richClubPercentage = 90
 
 if("richClubPercentage" in config):
 	richClubPercentage = config["richClubPercentage"];
 
-shallPlot = True
+networks = jgf.igraph.load(config["network"], compressed=True)
 
-if("generatePlots" in config):
-	shallPlot = config["generatePlots"];
+outputNetworks = []
 
-
-with open(indexFilename, "r") as fd:
-	indexData = json.load(fd)
-
-with open(labelFilename, "r") as fd:
-	labelData = json.load(fd)
-
-
-for entry in indexData:
-	entryFilename = entry["filename"]
-
-	alreadySigned = ("separated-sign" in entry) and entry["separated-sign"]
-
-	baseName,extension = os.path.splitext(entryFilename)
-
-	#inputfile,aggregatorName,isNullModel
-	filenames = [(entryFilename,baseName,False)]
-
-	if(alreadySigned):
-		filenames += [(baseName+"_negative%s"%(extension),baseName+"_negative",False)]
-
-	if("null-models" in entry):
-		nullCount = int(entry["null-models"])
-		filenames += [(baseName+"-null_%d%s"%(i,extension),baseName,True) for i in range(nullCount)]
-		if(alreadySigned):
-			filenames += [(baseName+"_negative-null_%d%s"%(i,extension),baseName+"_negative",True) for i in range(nullCount)]
-
-
+for network in tqdm(networks):
+	
 	hasCommunities = False
-	if("community" in entry):
+	if("Community" in network.vertex_attributes()):
 		hasCommunities = (entry["community"]==True)
 	
-	measurementEntries = set()
-	if("measurements" in entry):
-		measurementEntries.update(set(entry["measurements"]))
+	weighted = "weight" in network.edge_attributes()
 	
-	if("properties" in entry):
-		del entry["properties"];
-
-
-	finalNodeMeasurements = {};
-	nullmodelNodeMeasurements = {};
-
-	finalNetworkMeasurements = {};
-	nullmodelNetworkMeasurements = {};
-
-	for filename,aggregateName,isNullModel in tqdm(filenames):
-		adjacencyMatrix = np.abs(loadCSVMatrix(PJ(CSVDirectory, filename))) #taking the ABS temporarily
-		directionMode=ig.ADJ_DIRECTED
-		weights = adjacencyMatrix
-		if(check_symmetric(adjacencyMatrix)):
-			directionMode=ig.ADJ_UPPER
-			weights = weights[np.triu_indices(weights.shape[0], k = 0)]
-		g = ig.Graph.Adjacency((adjacencyMatrix != 0).tolist(), directionMode)
-		weighted = False
-		if(not ((weights==0) | (weights==1)).all()):
-			g.es['weight'] = weights[weights != 0]
-			weighted = True
+	for measurement,measurementFunction in measurements.items():
+		nodePropData,networkPropData = measurementFunction(network)
 		
-		inputBaseName,_ = os.path.splitext(filename)
-		communitiesFilePath = PJ(CSVDirectory,"%s_community.txt"%os.path.basename(inputBaseName))
 
-		if(hasCommunities and os.path.exists(communitiesFilePath)):
-			communities = []
-			with open(communitiesFilePath, "r") as fd:
-				for line in fd:
-					communities.append(line.strip())
-			g.vs["Community"] = communities
-		
-		weightsProperty = None
-		if(weighted):
-			weightsProperty = "weight"
-		
-		nodeProperties = {};
-		networkProperties = {};
+		if(nodePropData is not None):
+			network.vs[measurement] = nodePropData
 
-		for measurement,measurementFunction in measurements.items():
-			nodePropData,networkPropData = measurementFunction(g)
-			# print("%s: "%measurement,end=" ");
-			if(nodePropData is not None):
-				nodeProperties[measurement] = nodePropData
-				# print("n%d"%len(nodeProp),end="   ");
-			if(networkPropData is not None):
-				networkProperties[measurement] = networkPropData
-			# 	print(networkProp,end="   ");
-			# print("\n",flush=True);
-
-		if(not isNullModel):
-			finalNodeMeasurements[aggregateName] = nodeProperties 
-			finalNetworkMeasurements[aggregateName] = networkProperties
-		else:
-			if(aggregateName not in nullmodelNodeMeasurements):
-				nullmodelNodeMeasurements[aggregateName] = {}
-				nullmodelNetworkMeasurements[aggregateName] = {}
-			for measurement,propData in nodeProperties.items():
-				if(measurement not in nullmodelNodeMeasurements[aggregateName]):
-					nullmodelNodeMeasurements[aggregateName][measurement] = []
-				nullmodelNodeMeasurements[aggregateName][measurement].append(propData)
-			for measurement,propData in networkProperties.items():
-				if(measurement not in nullmodelNetworkMeasurements[aggregateName]):
-					nullmodelNetworkMeasurements[aggregateName][measurement] = []
-				nullmodelNetworkMeasurements[aggregateName][measurement].append(propData)
-
-		
-		outputBaseName,outputExtension = os.path.splitext(filename)
-
-		if("Community" in g.vertex_attributes()):
-			with open(PJ(csvOutputDirectory,"%s_community.txt"%os.path.basename(outputBaseName)), "w") as fd:
-				for item in g.vs["Community"]:
-					fd.write("%s\n"%str(item))
-		
-		for nodeProperty,nodePropData in nodeProperties.items():
-			propFilename = PJ(csvOutputDirectory,"%s_prop_%s.txt"%(os.path.basename(inputBaseName),nodeProperty))
-			np.savetxt(propFilename,nodePropData);
-
-		if("properties" not in entry):
-			entry["properties"] = list(nodeProperties.keys());
-
-		with open(PJ(csvOutputDirectory,os.path.basename(filename)), "w") as fd:
-			if(weighted):
-				outputData = g.get_adjacency(attribute='weight').data
+		if(networkPropData is not None):
+			if(nodePropData is not None): #Average measurement
+				network["Avg. "+measurement] = networkPropData
 			else:
-				outputData = g.get_adjacency().data
-			np.savetxt(fd,outputData,delimiter=",")
-
-	# print(finalNetworkMeasurements);
-	# nullmodelNodeMeasurements = {};
-
-	# print(nullmodelNetworkMeasurements);
-	# nullmodelNetworkMeasurements = {};
-	for aggregatorName in finalNetworkMeasurements:
-		with open(PJ(csvOutputDirectory,"%s__measurements.csv"%aggregatorName), "w") as fd:
-			fd.write("Measurement,Value,NullModels\n")
-			for measurement,value in finalNetworkMeasurements[aggregatorName].items():
-				fd.write("%s,%0.18g"%(measurement,value))
-				if(aggregatorName in nullmodelNetworkMeasurements
-					and measurement in nullmodelNetworkMeasurements[aggregatorName]):
-					nullValues = nullmodelNetworkMeasurements[aggregatorName][measurement]
-					fd.write(","+",".join(["%0.18g"%nullValue for nullValue in nullValues]))
-					_,bins = np.histogram([value]+nullValues,bins=30)
-					if(shallPlot):
-						fig = plt.figure(figsize= (8,5))
-						ax = plt.axes()
-						ax.hist(nullValues,bins=bins,density=True,color="#888888")
-						ax.hist([value],bins=bins,density=True,color="#cc1111")
-						ax.set_xlabel(measurement);
-						ax.set_ylabel("Density");
-						fig.savefig(PJ(figuresOutputDirectory,"network_hist_%s_%s.pdf"%(aggregatorName,measurement)));
-						plt.close(fig)
-				fd.write("\n")
-	
-	if(shallPlot):
-		for aggregatorName in finalNodeMeasurements:
-			for measurement,values in finalNodeMeasurements[aggregatorName].items():
-					nullValues = [];
-					if(aggregatorName in nullmodelNodeMeasurements
-						and measurement in nullmodelNodeMeasurements[aggregatorName]):
-						nullValues = list(np.array(nullmodelNodeMeasurements[aggregatorName][measurement]).flatten())
-					_,bins = np.histogram(list(values)+nullValues,bins=30)
-					fig = plt.figure(figsize= (8,5))
-					ax = plt.axes()
-					if(nullValues):
-						ax.hist(nullValues,bins=bins,density=True,color="#888888")
-					ax.hist(values,bins=bins,density=True,color="#cc1111",alpha=0.75)
-					ax.set_xlabel(measurement);
-					ax.set_ylabel("Density");
-					fig.savefig(PJ(figuresOutputDirectory,"nodes_hist_%s_%s.pdf"%(aggregatorName,measurement)));
-					plt.close(fig)
+				network[measurement] = networkPropData
 		
+	outputNetworks.append(network)
 
+jgf.igraph.save(outputNetworks, outputFile, compressed=True)
 
-with open(PJ(outputDirectory,"index.json"), "w") as fd:
-	json.dump(indexData,fd)
-
-with open(PJ(outputDirectory,"label.json"), "w") as fd:
-	json.dump(labelData,fd)
-
+exitApp()
