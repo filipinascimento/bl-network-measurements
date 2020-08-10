@@ -320,11 +320,8 @@ outputNetworks = []
 
 for network in tqdm(networks):
 	
-	hasCommunities = False
-	if("Community" in network.vertex_attributes()):
-		hasCommunities = (entry["community"]==True)
-	
 	weighted = "weight" in network.edge_attributes()
+	hasCommunities = "Community" in network.vertex_attributes()
 	
 	for measurement,measurementFunction in measurements.items():
 		nodePropData,networkPropData = measurementFunction(network)
