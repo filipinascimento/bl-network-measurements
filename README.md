@@ -39,16 +39,15 @@ App to calculate several basic statistics for networks and their respective null
 
 Some statistics are calculated only for `directed` or `weighted` networks. Those requiring `communities` are only calculated if the Communities App was executed on this data before.
 
-
 ### Authors
-- [Filipi N. Silva](filsilva@iu.edu)
+- [Filipi N. Silva](https://filipinascimento.github.io)
 
-<!-- ### Contributors
-- Franco Pestilli (franpest@indiana.edu) -->
+### Contributors
+- [Franco Pestilli](https://liberalarts.utexas.edu/psychology/faculty/fp4834)
 
-<!-- ### Funding  -->
-<!-- [![NSF-BCS-1734853](https://img.shields.io/badge/NSF_BCS-1734853-blue.svg)](https://nsf.gov/awardsearch/showAward?AWD_ID=1734853) -->
 
+### Funding
+[![NIH-1R01EB029272-01](https://img.shields.io/badge/NIH-1R01EB029272_01-blue.svg)](https://projectreporter.nih.gov/project_info_description.cfm?aid=9916138&icde=52173380&ddparam=&ddvalue=&ddsub=&cr=1&csb=default&cs=ASC&pball=)
 
 ### Citations
 
