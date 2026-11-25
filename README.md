@@ -2,6 +2,48 @@
 [![Run on Brainlife.io](https://img.shields.io/badge/Brainlife-bl.app.1-blue.svg)](https://doi.org/10.25663/brainlife.app.321)
 
 # Network Measurements
+
+<!-- brainlife-app:begin (generated from the App manifest; edit the manifest, not this block) -->
+
+> **App to calculate several basic statistics for networks and their respective null model distributions.**
+
+Computes node measurements (degree, strength, clustering, coreness, betweenness and others) and network measurements (averages, rich-club coefficient, assortativity, diameter, betweenness centralization) with igraph, and the same statistics for any null models carried in the input. Community-based measures (modularity, participation coefficient, module degree z-score) are computed only if Network Communities was run first. Most measurements do not support negative weights.
+
+| | |
+|---|---|
+| 📥 **Inputs** | `generic/network` |
+| 📤 **Outputs** | `generic/network` |
+| 🐳 **Container** | `filsilva/cxnetwork:0.2.0` |
+| ⚙️ **Resources** | 1 CPUs · 6 GB memory · 1 h walltime |
+| 🔗 **Run it** | [doi.org/10.25663/brainlife.app.321](https://doi.org/10.25663/brainlife.app.321) |
+
+#### 📥 Inputs
+
+| Input | Datatype | Required | Description |
+|---|---|---|---|
+| `network` | `generic/network` | yes | Input network, if the network contains null models, properties for null models are calculated as well. Note that most of the measurements do not work for negative weights, please use preprocessor App to generate separated signed versions of the network. |
+
+#### 📤 Outputs
+
+| Output | Datatype | Description |
+|---|---|---|
+| `output` | `generic/network` | Output a network containing the calculated properties. |
+
+<details>
+<summary><b>⚙️ Parameters</b> (1)</summary>
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `richClubPercentage` | number | `80` | Percentile of rich-club to calculate the rich-club coefficient. |
+
+</details>
+
+📚 **References used by this App:**
+- Bassett DS, Sporns O. Network neuroscience. Nat Neurosci 20(3):353 (2017). [doi:10.1038/nn.4502](https://doi.org/10.1038/nn.4502)
+- Costa LdF, Rodrigues FA, Travieso G, Villas Boas PR. Characterization of complex networks: A survey of measurements. Adv Phys 56(1):167-242 (2007). [doi:10.1080/00018730601170527](https://doi.org/10.1080/00018730601170527)
+
+<!-- brainlife-app:end -->
+
 App to calculate several basic statistics for networks and their respective null model distributions.
 
 ## List of measurements:
